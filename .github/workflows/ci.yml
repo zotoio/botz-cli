@@ -52,5 +52,5 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
           pnpm pack --pack-destination dist-package
-          npm install --global --ignore-scripts dist-package/*.tgz
+          npm install --global --ignore-scripts ./dist-package/*.tgz
       - run: python scripts/smoke-swarm.py
