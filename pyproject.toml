@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "botz-cli"
+version = "0.1.0"
+description = "Lightweight botz command and executable plugin host"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "zotoio" }]
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/zotoio/botz-cli"
+Issues = "https://github.com/zotoio/botz-cli/issues"
+
+[project.scripts]
+botz = "botz_cli.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5", "build>=1.2"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/botz_cli"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S603", "S607"]
+"scripts/**" = ["S101", "S603"]

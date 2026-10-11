@@ -1,0 +1,56 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ['3.11', '3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install '.[dev]'
+      - run: ruff check .
+      - run: pytest
+      - run: python -m build
+      - name: Install wheel without dependencies
+        run: |
+          python -m venv .consumer
+          .consumer/bin/python -m pip install --no-deps dist/*.whl
+          .consumer/bin/botz --version
+          .consumer/bin/botz --help
+  swarm-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install build
+      - run: python -m build
+      - run: python -m pip install --no-deps dist/*.whl
+      - uses: actions/checkout@v4
+        with:
+          repository: zotoio/botz-mcp-swarm-cli
+          ref: a85ef228248e8caee5a64ad131bcbe61fcc0e09a
+          path: extension
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and install extension
+        run: |
+          cd extension
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm pack --pack-destination dist-package
+          npm install --global --ignore-scripts dist-package/*.tgz
+      - run: python scripts/smoke-swarm.py
