@@ -1,0 +1,43 @@
+{
+  "name": "@zotoio/botz-cli",
+  "version": "0.2.0",
+  "description": "The botz CLI: discover, install, and run extensions",
+  "type": "module",
+  "license": "MIT",
+  "author": "zotoio",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@10.34.6",
+  "bin": {
+    "botz": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zotoio/botz-cli.git"
+  },
+  "homepage": "https://github.com/zotoio/botz-cli#readme",
+  "bugs": {
+    "url": "https://github.com/zotoio/botz-cli/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node scripts/clean.mjs && tsc && node scripts/executable.mjs",
+    "lint": "tsc --noEmit",
+    "test": "pnpm build && node --test tests/*.test.mjs",
+    "prepack": "pnpm build",
+    "check:release": "node scripts/check-release.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,93 +1,93 @@
 # botz-cli
 
-The lightweight host for `botz <command> [args]`. Python 3.11+, with no runtime
-dependencies. Originally extracted from [botz-mcp](https://github.com/zotoio/botz-mcp).
+The TypeScript host for `botz <command> [args]`. Runs on Node.js 22.13+ with no
+runtime dependencies. Originally extracted from [botz-mcp](https://github.com/zotoio/botz-mcp).
 
-## Install
-
-Install from this public repository until a registry release is available:
+## Install and discover extensions
 
 ```bash
-pipx install git+https://github.com/zotoio/botz-cli.git
-botz --help
+npm install -g @zotoio/botz-cli
 botz --version
-```
-
-Alternatively, install with `python -m pip install git+https://github.com/zotoio/botz-cli.git`
-inside a virtual environment. Put its `bin` directory on PATH.
-
-## MCP Swarm extension
-
-The [botz-mcp-swarm-cli](https://github.com/zotoio/botz-mcp-swarm-cli) extension
-is installed and versioned separately. With Node 22.13+ and pnpm available:
-
-```bash
-git clone https://github.com/zotoio/botz-mcp-swarm-cli.git
-cd botz-mcp-swarm-cli
-pnpm install --frozen-lockfile
-pnpm build
-pnpm link --global
-botz plugins
+botz plugins search
+botz plugins install mcp-swarm
+botz plugins list
 botz mcp-swarm --help
-botz mcp-swarm suite capture --url http://127.0.0.1:3000/mcp --name demo
-botz mcp-swarm suite run --suite demo
 ```
 
-The extension installs `botz-mcp-swarm` on PATH. The host discovers it as
-`mcp-swarm`, forwards arguments, and sets `BOTZ_PLUGIN=mcp-swarm`.
-No Python package dependency is needed between this host and the Node extension.
-The extension must not install its own `botz` executable.
-
-## Optional MCP server
-
-Install `botz-mcp` separately and put its executable on PATH, then run:
+`botz plugins install` installs the extension into a host-managed directory,
+without requiring the extension's global npm/pnpm bin directory on PATH. Only the
+core `botz` executable needs to be on PATH. Repeating the command updates to the
+latest stable extension version. A failed install preserves the previous one.
 
 ```bash
-botz serve
+botz plugins info mcp-swarm
+botz plugins list --json
+botz plugins install mcp-swarm --version 0.5.3
+botz plugins install mcp-swarm --version next
 ```
 
-This executes `botz-mcp` without importing the server or installing its model
-dependencies into the host. Without the server executable, `serve` exits 127
-with an installation hint. `botz serve --help` works without the server installed.
+Search uses the core's bundled catalog of known extensions (currently MCP Swarm).
+List reports the core version and each installed extension's version, source, and
+executable location. Versions are read from package metadata without running
+plugins. Arbitrary PATH executables without npm metadata show `unknown`.
+
+For source development or a version not yet on npm, Git and pnpm are also needed:
+
+```bash
+botz plugins install mcp-swarm --source --ref main
+```
+
+Source installs run the selected public repository's install/build scripts.
+Registry installs disable lifecycle scripts. `--version` accepts an exact SemVer,
+`latest`, or `next`; `--ref` accepts a Git tag, branch, or commit with `--source`.
+Installs live in `~/.local/share/botz/plugins`, or the directory set by
+`BOTZ_PLUGIN_HOME`. An interrupted installer may leave a `.mcp-swarm.lock`
+directory: remove it only after confirming no installer is running. A
+`.mcp-swarm.previous` directory preserves an installation interrupted during
+replacement and must be recovered before installing again.
+
+## Migrating from the Python host
+
+Version 0.2.0 replaces the Python host with TypeScript compiled to JavaScript.
+Install the npm package, remove the old pipx installation with
+`pipx uninstall botz-cli`, and check `botz --version`. Python is no longer needed
+for the core. Python entry-point plugins must expose a `botz-<name>` executable
+on PATH instead. Existing managed MCP Swarm installations remain discoverable.
 
 ## Extension contract
 
-Executable plugins are files named `botz-<name>` on PATH. The first executable
-with a given name wins. Plugin names start with a letter or digit and contain
-only letters, digits, and hyphens. Empty PATH entries are ignored.
+The core alone owns the `botz` executable. The separately versioned
+[botz-mcp-swarm-cli](https://github.com/zotoio/botz-mcp-swarm-cli) package owns
+`botz-mcp-swarm` and is invoked with `botz mcp-swarm [args]`.
 
-On Linux and macOS, the host replaces itself with the executable, preserving
-argument boundaries, working directory, inherited environment, signals, and exit
-status. The original host's POSIX executable behavior is retained; Windows batch
-file plugins (`.cmd`/`.bat`) are not currently supported.
+Managed extensions take precedence over executables named `botz-<name>` on PATH;
+otherwise the first executable wins. Empty PATH entries are ignored. Names use
+letters, digits, and hyphens, starting with a letter or digit. `serve`, `plugins`,
+`help`, and `mcp` are reserved.
 
-Python packages can also register in-process plugins:
+The host preserves literal argument boundaries, cwd, environment, and exit
+status, and sets `BOTZ_PLUGIN=<name>`. It forwards SIGINT/SIGTERM to the plugin
+process group on POSIX. Managed npm JavaScript bins work on Windows, macOS, and
+Linux through the current Node executable. Arbitrary Windows batch-file plugins
+without resolvable npm package metadata are not supported.
 
-```toml
-[project.entry-points."botz.plugins"]
-hello = "my_package.cli:main"
-```
+## Optional MCP server
 
-The callable accepts `argv: list[str]` and returns an integer exit status.
-An optional `botz_help` attribute supplies its help text. Entry-point plugins
-override an executable plugin with the same name. They must be installed into
-the host's Python environment (with pipx, use `pipx inject botz-cli <package>`).
-Malformed entry points are skipped with a warning.
+Install `botz-mcp` separately and put its executable on PATH, then use
+`botz serve [args]`. The host does not install the server's model dependencies.
+`botz serve --help` works without the server; a missing server exits 127.
+Unknown commands exit 2 and known uninstalled extensions show an install hint.
 
-`serve`, `plugins`, `help`, and `mcp` are reserved. The server executable
-`botz-mcp` is therefore never mistaken for a plugin. Unknown commands exit 2.
-
-## Development
+## Development and release
 
 ```bash
-python -m venv .venv
-. .venv/bin/activate
-python -m pip install -e '.[dev]'
-ruff check .
-pytest
-python -m build
+pnpm install --frozen-lockfile
+pnpm lint
+pnpm test
+pnpm build
+pnpm pack --pack-destination .artifacts
 ```
 
-CI checks the installed wheel and runs the actual MCP Swarm executable through
-`botz mcp-swarm`. Only this repo owns and publishes the `botz` command;
-`botz-mcp` owns the server and `botz-mcp-swarm-cli` owns the load-testing extension.
+CI builds, tests, and installs the packed artifact on Linux, macOS, and Windows
+with Node 22.13 and 24. See [RELEASING.md](RELEASING.md) for SemVer releases and
+npm trusted publishing.

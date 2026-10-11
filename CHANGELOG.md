@@ -1,8 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Replace the Python host with a native TypeScript/Node CLI, published as `@zotoio/botz-cli`.
+- Add extension search, info, managed install/update, and installed-version reporting.
+- Preserve `botz mcp-swarm [args]` and optional `botz serve` dispatch with literal arguments and signal forwarding.
+- Build and test packed npm artifacts on Linux, macOS, and Windows; publish SemVer tags through GitHub OIDC.
+- Breaking: Python entry-point plugins now need to expose a `botz-<name>` executable on PATH.
+
 ## 0.1.0
 
-- Extract the `botz` host and plugin discovery from `botz-mcp`.
-- Preserve PATH and `botz.plugins` entry-point extensions, including `botz mcp-swarm`.
-- Launch `botz serve` through the separately installed server executable.
-- Package the host without MCP server, model, or Node dependencies.
+- Extract the Python `botz` host from botz-mcp into its own public repository.
