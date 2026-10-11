@@ -1,6 +1,6 @@
 {
   "name": "@zotoio/botz-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The botz CLI: discover, install, and run extensions",
   "type": "module",
   "license": "MIT",

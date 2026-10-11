@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Release through the GitHub npm trusted-publishing workflow after the initial registry bootstrap.
+- Bound CI and publishing jobs so stalled installations cannot run indefinitely.
+
 ## 0.2.0
 
 - Replace the Python host with a native TypeScript/Node CLI, published as `@zotoio/botz-cli`.
