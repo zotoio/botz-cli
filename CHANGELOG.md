@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- Compare plugin working directories by real path so tests pass on macOS temporary directories, and cover running from a symlinked directory.
+
 ## 0.2.1
 
 - Release through the GitHub npm trusted-publishing workflow after the initial registry bootstrap.
