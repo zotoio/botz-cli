@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, delimiter } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +10,8 @@ import { transaction, parseInstall } from '../dist/install.js';
 const coreVersion = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const cli = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 function fixture(t) {
-  const root = mkdtempSync(join(tmpdir(), 'botz-test-'));
+  // macOS temporary paths can use /var while child processes report /private/var.
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'botz-test-')));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   return root;
 }
@@ -48,13 +49,15 @@ test('catalog search, info and JSON list report actual installed metadata withou
   assert.equal(JSON.parse(invoke(['plugins', 'search', 'swarm', '--json'], root).stdout).length, 1);
   assert.notEqual(invoke(['plugins', 'install', 'unknown'], root).status, 0);
 });
-test('forwards literal arguments, cwd, environment and nonzero exit without a shell', t => {
-  const root = fixture(t);
+for (const linked of [false, true]) test(`forwards literal arguments, cwd, environment and nonzero exit without a shell${linked ? ' through a symlink' : ''}`, t => {
+  const base = fixture(t);
+  const root = linked ? join(base, 'linked') : base;
+  if (linked) symlinkSync(base, root, process.platform === 'win32' ? 'junction' : 'dir');
   plugin(root, 'mcp-swarm', `console.log(JSON.stringify({args:process.argv.slice(2),cwd:process.cwd(),plugin:process.env.BOTZ_PLUGIN,custom:process.env.BOTZ_TEST})); process.exitCode=23;`);
   const args = ['space separated', '$(touch bad)', ';echo bad', '"quoted"', '--help'];
   const result = invoke(['mcp-swarm', ...args], root, { BOTZ_TEST: 'inherited' });
   assert.equal(result.status, 23, result.stderr);
-  assert.deepEqual(JSON.parse(result.stdout), { args, cwd: root, plugin: 'mcp-swarm', custom: 'inherited' });
+  assert.deepEqual(JSON.parse(result.stdout), { args, cwd: realpathSync(root), plugin: 'mcp-swarm', custom: 'inherited' });
 });
 test('managed install wins over PATH; first PATH executable wins and reserved names are excluded', { skip: process.platform === 'win32' }, t => {
   const root = fixture(t);
