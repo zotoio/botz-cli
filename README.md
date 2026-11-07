@@ -89,5 +89,5 @@ pnpm pack --pack-destination .artifacts
 ```
 
 CI builds, tests, and installs the packed artifact on Linux, macOS, and Windows
-with Node 22.13 and 24. See [RELEASING.md](RELEASING.md) for SemVer releases and
-npm trusted publishing.
+with Node 22.13 and 24. Every push to `main` is released by semantic-release from Conventional Commit
+messages and published to npm with trusted publishing. See [RELEASING.md](RELEASING.md).
